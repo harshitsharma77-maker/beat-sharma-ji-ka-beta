@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Beat Sharma Ji Ka Beta</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --saffron: #FF6B00;
+    --gold: #FFB800;
+    --deep: #1A0A3B;
+    --green: #00C853;
+    --red: #FF1744;
+    --sky: #00B0FF;
+  }
+  html, body {
+    width: 100%; height: 100%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  body {
+    font-family: 'Baloo 2', cursive;
+    background: var(--deep);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .banner-pattern {
+    width: 100%;
+    height: 12px;
+    background: repeating-linear-gradient(90deg, var(--saffron) 0 20px, var(--gold) 20px 40px, var(--green) 40px 60px, var(--saffron) 60px 80px);
+    flex-shrink: 0;
+  }
+  .game-container {
+    width: 100%;
+    max-width: 540px;
+    padding: 0 12px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .title-block { text-align: center; padding: 10px 0 4px; }
+  .title-main {
+    font-size: clamp(20px, 6vw, 32px);
+    font-weight: 800;
+    color: var(--gold);
+    text-shadow: 3px 3px 0 var(--saffron), 5px 5px 0 rgba(0,0,0,0.4);
+    line-height: 1.1;
+  }
+  .title-sub {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(10px, 3vw, 13px);
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .hud { display: flex; gap: 8px; width: 100%; justify-content: center; }
+  .hud-card {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 8px 6px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hud-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .hud-card.score-card::before { background: var(--gold); }
+  .hud-card.time-card::before  { background: var(--sky); }
+  .hud-card.best-card::before  { background: var(--green); }
+  .hud-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); margin-bottom: 2px;
+  }
+  .hud-val { font-size: clamp(22px, 6vw, 30px); font-weight: 800; line-height: 1; }
+  .score-card .hud-val { color: var(--gold); }
+  .time-card  .hud-val { color: var(--sky); }
+  .best-card  .hud-val { color: var(--green); }
+  .time-card.warning .hud-val { animation: time-pulse 0.5s ease infinite alternate; color: var(--red) !important; }
+  @keyframes time-pulse { from { opacity: 1; } to { opacity: 0.4; } }
+
+  .level-strip { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .level-badge {
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px; font-weight: 700;
+    background: var(--saffron); color: white;
+    padding: 4px 12px; border-radius: 20px;
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .level-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .level-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--saffron), var(--gold));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .msg { font-size: clamp(12px, 3.5vw, 15px); color: rgba(255,255,255,0.75); text-align: center; min-height: 22px; font-weight: 600; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(10px, 3vw, 18px);
+    width: 100%; max-width: 420px;
+  }
+  .hole-wrap { position: relative; width: 100%; padding-bottom: 100%; }
+  .hole-outer {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .mound {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+    background: radial-gradient(ellipse 80% 60% at 50% 80%, #388E3C, #1B5E20);
+    border-radius: 50% 50% 48% 48% / 60% 60% 40% 40%;
+    z-index: 2;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,0.3);
+  }
+  .hole-opening {
+    position: absolute; bottom: 40%; left: 10%; right: 10%; height: 28%;
+    background: radial-gradient(ellipse, #0d0705 60%, #2C1A0E);
+    border-radius: 50%; z-index: 1;
+    box-shadow: inset 0 4px 10px rgba(0,0,0,0.8), 0 0 0 3px #6B3F1A;
+  }
+  .capybara {
+    position: absolute; bottom: 36%;
+    left: 50%; transform: translateX(-50%) translateY(130%);
+    width: 70%; aspect-ratio: 1;
+    z-index: 3;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: clamp(32px, 9vw, 52px);
+    line-height: 1;
+    filter: drop-shadow(0 -4px 8px rgba(0,0,0,0.4));
+  }
+  .capybara.up      { transform: translateX(-50%) translateY(0%); }
+  .capybara.whacked { transform: translateX(-50%) translateY(-15%) rotate(15deg) scale(1.15); }
+
+  .hit-fx {
+    position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+    font-size: clamp(14px, 4vw, 18px); font-weight: 800;
+    font-family: 'Baloo 2', cursive;
+    z-index: 10; pointer-events: none; opacity: 0;
+    white-space: nowrap; text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+  }
+  .hit-fx.burst { animation: burst-anim 0.55s ease-out forwards; }
+  @keyframes burst-anim {
+    0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+    40%  { opacity: 1; transform: translateX(-50%) translateY(-12px) scale(1.2); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-28px) scale(0.9); }
+  }
+  .hole-outer.hit-ripple { animation: hole-ripple 0.25s ease-out; }
+  @keyframes hole-ripple { 0% { transform: scale(1); } 50% { transform: scale(0.93); } 100% { transform: scale(1); } }
+
+  /* START SCREEN */
+  #start-screen {
+    position: fixed; inset: 0;
+    background: var(--deep);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100; gap: 18px; padding: 20px; text-align: center;
+  }
+  .big-title {
+    font-size: clamp(26px, 8vw, 48px); font-weight: 800;
+    color: var(--gold);
+    text-shadow: 4px 4px 0 var(--saffron), 7px 7px 0 rgba(0,0,0,0.4);
+    line-height: 1.1;
+  }
+  .big-capy { font-size: clamp(60px, 18vw, 100px); animation: bounce-idle 1.4s ease-in-out infinite; line-height: 1; }
+  @keyframes bounce-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  .desc {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(12px, 3.5vw, 15px);
+    color: rgba(255,255,255,0.6);
+    max-width: 320px; line-height: 1.6;
+  }
+  .desc b { color: var(--saffron); font-weight: 700; }
+  .desc .bomb-warn { color: var(--red); }
+
+  .start-btn {
+    background: linear-gradient(135deg, var(--saffron), var(--gold));
+    color: white; border: none; border-radius: 50px;
+    padding: clamp(14px,4vw,18px) clamp(36px,10vw,56px);
+    font-family: 'Baloo 2', cursive;
+    font-size: clamp(18px, 5vw, 24px); font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #c14e00, 0 10px 20px rgba(255,107,0,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    letter-spacing: 0.5px;
+  }
+  .start-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c14e00; }
+  .high-score-note { font-family: 'Poppins', sans-serif; font-size: 12px; color: rgba(255,255,255,0.3); }
+
+  /* GAME OVER */
+  #gameover-screen {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(6px);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100; gap: 16px; padding: 20px; text-align: center;
+  }
+  #gameover-screen.show { display: flex; }
+  .go-emoji { font-size: clamp(50px,14vw,80px); animation: go-pop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes go-pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .go-title  { font-size: clamp(22px,7vw,36px); font-weight: 800; color: white; }
+  .go-score  { font-size: clamp(48px,14vw,72px); font-weight: 800; color: var(--gold); text-shadow: 3px 3px 0 var(--saffron); line-height: 1; }
+  .go-sub    { font-family: 'Poppins', sans-serif; font-size: clamp(12px,3.5vw,15px); color: rgba(255,255,255,0.55); }
+  .go-new-best { background: var(--green); color: white; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; font-family: 'Poppins', sans-serif; display: none; }
+  .go-new-best.show { display: block; }
+  .go-verdict { font-size: clamp(15px,4.5vw,20px); font-weight: 600; color: rgba(255,255,255,0.8); max-width: 300px; line-height: 1.4; }
+
+  .shimmer-line {
+    width: 100%; max-width: 540px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--saffron), transparent);
+    opacity: 0.4; border-radius: 2px; flex-shrink: 0;
+  }
+  .combo-strip { display: flex; gap: 6px; align-items: center; min-height: 20px; justify-content: center; flex-wrap: wrap; }
+  .combo-star { font-size: 16px; animation: star-pop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes star-pop { from { transform: scale(0); } to { transform: scale(1); } }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <div class="big-capy">🦫</div>
+  <div class="big-title">Beat Sharma Ji<br>Ka Beta</div>
+  <p class="desc">
+    Sharma Ji Ka Beta has escaped! <b>Whack the capybaras</b> as fast as you can!<br><br>
+    Watch out for <span class="bomb-warn">💣 bombs</span> — they cost you 5 points!
+  </p>
+  <button class="start-btn" id="startBtn">KHELNA SHURU KARO!</button>
+  <p class="high-score-note" id="startHighScore">Best Score: 0</p>
+</div>
+
+<div id="gameover-screen">
+  <div class="go-emoji" id="goEmoji">🦫</div>
+  <div class="go-title">Time's Up!</div>
+  <div class="go-score" id="goScore">0</div>
+  <div class="go-new-best" id="goNewBest">🏆 New Best Score!</div>
+  <div class="go-verdict" id="goVerdict"></div>
+  <p class="go-sub">Whacks: <span id="goWhacks">0</span> &nbsp;|&nbsp; Bombs Hit: <span id="goMisses">0</span></p>
+  <button class="start-btn" id="replayBtn" style="margin-top:8px">PHIR SE KHELO!</button>
+</div>
+
+<div class="banner-pattern"></div>
+
+<div class="game-container">
+  <div class="title-block">
+    <div class="title-main">Beat Sharma Ji Ka Beta</div>
+    <div class="title-sub">Capybara Smashing Championship</div>
+  </div>
+  <div class="shimmer-line"></div>
+  <div class="hud">
+    <div class="hud-card score-card"><div class="hud-label">Score</div><div class="hud-val" id="scoreEl">0</div></div>
+    <div class="hud-card time-card" id="timeCard"><div class="hud-label">Time</div><div class="hud-val" id="timerEl">30</div></div>
+    <div class="hud-card best-card"><div class="hud-label">Best</div><div class="hud-val" id="bestEl">0</div></div>
+  </div>
+  <div class="level-strip">
+    <div class="level-badge" id="levelBadge">Level 1</div>
+    <div class="level-bar-wrap"><div class="level-bar-fill" id="levelBar"></div></div>
+  </div>
+  <div class="msg" id="msgEl">Ready? Get your thappad ready! 🤚</div>
+  <div class="grid" id="grid"></div>
+  <div class="combo-strip" id="comboStrip"></div>
+  <div class="shimmer-line"></div>
+</div>
+
+<script>
+const HOLES = 9, GAME_DURATION = 30;
+const WHACK_MSGS = ['+1 Mara!','+1 Thappad!','+1 Zabardast!','+1 BOOM!','+1 Wah!'];
+const MISS_MSGS  = ['-5 Arey NO!','-5 Bomb tha!','-5 Oops!!'];
+let score=0, best=parseInt(localStorage.getItem('sjkb_best')||'0');
+let timeLeft=GAME_DURATION, active=false, totalWhacks=0, totalMisses=0, starCount=0;
+let moleTimers=new Array(HOLES).fill(null), tickTimer=null, spawnTimer=null;
+const holes=Array.from({length:HOLES},()=>({up:false,isBomb:false}));
+
+const $=id=>document.getElementById(id);
+const scoreEl=$('scoreEl'), timerEl=$('timerEl'), bestEl=$('bestEl');
+const msgEl=$('msgEl'), levelBadge=$('levelBadge'), levelBar=$('levelBar');
+const timeCard=$('timeCard'), comboStrip=$('comboStrip');
+const startScreen=$('start-screen'), gameoverScreen=$('gameover-screen');
+
+bestEl.textContent=best;
+$('startHighScore').textContent=`Best Score: ${best}`;
+
+// Build grid
+const grid=$('grid');
+for(let i=0;i<HOLES;i++){
+  const wrap=document.createElement('div');
+  wrap.className='hole-wrap';
+  wrap.innerHTML=`<div class="hole-outer" id="hole-${i}">
+    <div class="hole-opening"></div>
+    <div class="capybara" id="capy-${i}">🦫</div>
+    <div class="mound"></div>
+    <div class="hit-fx" id="fx-${i}"></div>
+  </div>`;
+  wrap.querySelector('.hole-outer').addEventListener('pointerdown',e=>{e.preventDefault();whack(i);});
+  grid.appendChild(wrap);
+}
+
+const getLevel=()=>score>=70?5:score>=45?4:score>=25?3:score>=10?2:1;
+const getSpawnMs=()=>[1000,820,650,500,380][getLevel()-1];
+const getMoleMs =()=>[1500,1200,950,750,580][getLevel()-1];
+const getBombChance=()=>[0.08,0.12,0.18,0.22,0.27][getLevel()-1];
+
+function updateHUD(){
+  const lvl=getLevel();
+  const thresh=[0,10,25,45,70], next=[10,25,45,70,100];
+  const pct=lvl<5?Math.min(100,((score-thresh[lvl-1])/(next[lvl-1]-thresh[lvl-1]))*100):100;
+  levelBadge.textContent=`Level ${lvl}`;
+  levelBar.style.width=pct+'%';
+  scoreEl.textContent=score;
+  timeCard.classList.toggle('warning',timeLeft<=8);
+}
+
+function popUp(i){
+  if(!active||holes[i].up)return;
+  const isBomb=Math.random()<getBombChance();
+  holes[i].up=true; holes[i].isBomb=isBomb;
+  const capy=$(`capy-${i}`);
+  capy.textContent=isBomb?'💣':'🦫';
+  capy.classList.add('up'); capy.classList.remove('whacked');
+  moleTimers[i]=setTimeout(()=>hideHole(i),getMoleMs());
+}
+
+function hideHole(i){
+  if(!holes[i].up)return;
+  holes[i].up=false; holes[i].isBomb=false;
+  const capy=$(`capy-${i}`);
+  capy.classList.remove('up','whacked');
+}
+
+function whack(i){
+  if(!active||!holes[i].up)return;
+  clearTimeout(moleTimers[i]);
+  const fxEl=$(`fx-${i}`), holeEl=$(`hole-${i}`), capy=$(`capy-${i}`);
+  if(holes[i].isBomb){
+    score=Math.max(0,score-5); totalMisses++;
+    fxEl.textContent=MISS_MSGS[Math.floor(Math.random()*MISS_MSGS.length)];
+    fxEl.style.color='#FF1744';
+    msgEl.textContent='💥 Woh toh bomb tha bhai!';
+  } else {
+    score+=1; totalWhacks++;
+    capy.classList.add('whacked');
+    fxEl.textContent=WHACK_MSGS[Math.floor(Math.random()*WHACK_MSGS.length)];
+    fxEl.style.color='#FFB800';
+    addStar();
+    if(totalWhacks%5===0){
+      const m=['Wah bhai wah! 👏','Sharma Ji roenge aaj! 😂','Ekdam mast! 🔥','Zabardast! 💥'];
+      msgEl.textContent=m[Math.floor(Math.random()*m.length)];
+    }
+  }
+  fxEl.classList.remove('burst'); void fxEl.offsetWidth; fxEl.classList.add('burst');
+  holeEl.classList.remove('hit-ripple'); void holeEl.offsetWidth; holeEl.classList.add('hit-ripple');
+  holeEl.addEventListener('animationend',()=>holeEl.classList.remove('hit-ripple'),{once:true});
+  updateHUD(); hideHole(i);
+}
+
+function addStar(){
+  starCount++;
+  if(starCount>10){comboStrip.innerHTML='';starCount=1;}
+  const s=document.createElement('span');
+  s.className='combo-star'; s.textContent='⭐';
+  comboStrip.appendChild(s);
+}
+
+function spawnMole(){
+  if(!active)return;
+  const empties=holes.map((h,i)=>h.up?null:i).filter(i=>i!==null);
+  if(!empties.length)return;
+  popUp(empties[Math.floor(Math.random()*empties.length)]);
+}
+
+function startGame(){
+  score=0; timeLeft=GAME_DURATION; active=true;
+  totalWhacks=0; totalMisses=0; starCount=0;
+  comboStrip.innerHTML='';
+  msgEl.textContent='Maaro usse! Sharma Ji Ka Beta aa gaya! 🦫';
+  startScreen.style.display='none';
+  gameoverScreen.classList.remove('show');
+  updateHUD(); timerEl.textContent=GAME_DURATION;
+  holes.forEach((_,i)=>hideHole(i));
+  setTimeout(spawnMole,300);
+  spawnTimer=setInterval(()=>{if(active)spawnMole();},getSpawnMs());
+  tickTimer=setInterval(()=>{
+    timeLeft--; timerEl.textContent=timeLeft; updateHUD();
+    if([10,25,45,70].includes(score)){
+      clearInterval(spawnTimer);
+      spawnTimer=setInterval(()=>{if(active)spawnMole();},getSpawnMs());
+    }
+    if(timeLeft<=0)endGame();
+  },1000);
+}
+
+function endGame(){
+  active=false;
+  clearInterval(tickTimer); clearInterval(spawnTimer);
+  moleTimers.forEach(t=>clearTimeout(t));
+  holes.forEach((_,i)=>hideHole(i));
+  const isNewBest=score>best;
+  if(isNewBest){best=score;localStorage.setItem('sjkb_best',best);}
+  bestEl.textContent=best;
+  const verdicts=[
+    [0,5,  '😭 Sharma Ji Ka Beta ne haraaya tumhe!'],
+    [5,15, '😅 Thodi practice aur chahiye...'],
+    [15,30,'😎 Theek-thaak! Sharma Ji worried hai!'],
+    [30,50,'🔥 Wah! Sharma Ji Ki naak kaat di!'],
+    [50,70,'🏆 Incredible! Sharma Ji Ko Shock Lag Gaya!'],
+    [70,999,'👑 LEGEND! Sharma Ji ne coaching band kar di!'],
+  ];
+  const v=verdicts.find(([lo,hi])=>score>=lo&&score<hi);
+  $('goScore').textContent=score;
+  $('goWhacks').textContent=totalWhacks;
+  $('goMisses').textContent=totalMisses;
+  $('goVerdict').textContent=v?v[2]:'';
+  $('goEmoji').textContent=score>=30?'🏆':'🦫';
+  $('goNewBest').classList.toggle('show',isNewBest);
+  $('startHighScore').textContent=`Best Score: ${best}`;
+  gameoverScreen.classList.add('show');
+}
+
+$('startBtn').addEventListener('click',startGame);
+$('replayBtn').addEventListener('click',startGame);
+</script>
+</body>
+</html>
